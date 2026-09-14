@@ -9,7 +9,7 @@ async def test_login_success(client, registered_user):
 
 @pytest.mark.asyncio
 async def test_login_wrong_password(client, registered_user):
-    bad_payload = {"email": registered_user["email"], "password": "wrong.password"}
+    bad_payload = {"email": registered_user["email"],"username": registered_user["username"], "password": "wrong.password"}
     response = await client.post('auth/jwt/login', json= bad_payload)
     assert response.status_code == 401
 

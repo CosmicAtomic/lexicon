@@ -21,7 +21,7 @@ async def client():
 
 @pytest.fixture
 async def registered_user(client):
-    payload = {"email": "dope@example.com", "password": "supersecret123"}
+    payload = {"email": "dope@example.com","username": "test_user", "password": "supersecret123"}
     await client.post('auth/signup', json=payload)
     return payload
 

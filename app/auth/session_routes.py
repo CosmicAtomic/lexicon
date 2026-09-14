@@ -1,6 +1,6 @@
 from app.dependencies import get_db, get_session_user, sessions, verify_csrf_token
 from app.limiter import limiter
-from app.schema import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse
 from app.security import verify_password, generate_csrf_token
 from app.services import get_user_by_email
 from datetime import datetime

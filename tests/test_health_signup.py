@@ -15,16 +15,27 @@ async def test_root(client):
 async def test_signup_success(client):
     response = await client.post('auth/signup', json= {
         "email": "test@example.com",
+        "username": "test_dev",
         "password": "supersecret123"
     })
     assert response.status_code == 201
     body = response.json()
+    assert body["username"] == "test_dev"
     assert body["email"] == "test@example.com"
     assert "password" not in body and "hashed_password" not in body
 
 @pytest.mark.asyncio
 async def test_duplicate_email_rejected(client):
-    payload = {"email": "user1@example.com", "password": "supersecret123"}
+    payload = {"email": "user1@example.com", "username": "test_dev",  "password": "supersecret123"}
     await client.post('auth/signup', json=payload)
     response = await client.post('auth/signup', json=payload)
     assert response.status_code == 400
+    assert response.json() == {"detail": "Email already exists"}
+
+@pytest.mark.asyncio
+async def test_duplicate_username_rejected(client):
+    payload = {"email": "user1@example.com", "username": "test_dev",  "password": "supersecret123"}
+    await client.post('auth/signup', json=payload)
+    response = await client.post('auth/signup', json={"email": "user2@example.com", "username": "test_dev",  "password": "supersecret123"})
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Username already exists"}

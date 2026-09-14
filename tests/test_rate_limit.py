@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_rate_limit_blocks_after_threshold(client):
-    spam_payload = {"email": "spam@example.com", "password": "guessed_password"}
+    spam_payload = {"email": "spam@example.com", "username": "test_dev", "password": "guessed_password"}
     for _ in range(5):
         await client.post('auth/session/login', json= spam_payload)
         await client.post('auth/jwt/login', json= spam_payload)
@@ -13,7 +13,7 @@ async def test_rate_limit_blocks_after_threshold(client):
     assert jwt_response.status_code == 429
 
 async def test_rate_limit_runs_under_window(client):
-    spam_payload = {"email": "spam@example.com", "password": "guessed_password"}
+    spam_payload = {"email": "spam@example.com", "username": "test_dev", "password": "guessed_password"}
     for _ in range(4):
         jwt_response = await client.post('auth/jwt/login', json= spam_payload)
         assert jwt_response.status_code != 429
@@ -22,7 +22,7 @@ async def test_rate_limit_runs_under_window(client):
         assert session_response.status_code != 429
 
 async def test_rate_limit_resets_after_window(client, monkeypatch):
-    spam_payload = {"email": "spam@example.com", "password": "guessed_password"}
+    spam_payload = {"email": "spam@example.com", "username": "test_dev", "password": "guessed_password"}
     for _ in range(5):
         await client.post('auth/jwt/login', json= spam_payload)
         await client.post('auth/session/login', json= spam_payload)

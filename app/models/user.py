@@ -10,7 +10,7 @@ class User(Base):
     github_id = Column(String, nullable= True, unique= True)
     google_id = Column(String, nullable= True, unique= True)
     email= Column(String, unique= True, nullable= True)
-    username = Column(String, nullable = True)
+    username = Column(String, nullable = False, unique= True)
     hashed_password = Column(String, nullable = False)
 
     posts = relationship("Post", back_populates="author")

@@ -2,8 +2,8 @@ from app.dependencies import get_current_user, get_db
 from app.limiter import limiter
 from app.models.user import User
 from app.security import create_access_token, hash_password, verify_password 
-from app.services import get_user_by_email
-from app.schema import Token, UserCreate, UserResponse
+from app.services import get_user_by_email, get_user_by_username
+from app.schemas.user import Token, UserCreate, UserResponse
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -22,8 +22,11 @@ def login(payload: UserCreate, request: Request, db: Session = Depends(get_db)):
 def signup(payload: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
+    if get_user_by_username(db, payload.username):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
     new_user = User(
         email = payload.email,
+        username = payload.username,
         hashed_password = hash_password(payload.password)
     )
     db.add(new_user)
