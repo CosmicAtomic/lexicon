@@ -1,3 +1,4 @@
+from app.models.post import Post
 from app.models.user import User
 from sqlalchemy.orm import Session
 
@@ -15,3 +16,6 @@ def get_user_by_google_id(db: Session, google_id):
 
 def get_user_by_username(db: Session, username):
     return db.query(User).filter(User.username == username).first()
+
+def get_post_by_id(db: Session, post_id):
+    return db.query(Post).filter(Post.id == post_id).first()

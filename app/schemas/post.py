@@ -6,6 +6,10 @@ class PostCreate(BaseModel):
     title: str
     body: str
 
+class PostUpdate(BaseModel):
+    title: str | None = None
+    body: str | None = None
+
 class PostResponse(BaseModel):
     id : uuid.UUID
     title: str

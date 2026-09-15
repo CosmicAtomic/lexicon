@@ -2,6 +2,8 @@ from app.auth.routes import jwt_auth
 from app.auth.session_routes import session_auth
 from app.config import settings
 from app.limiter import limiter
+from app.routes.comment import comment_router
+from app.routes.post import post_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -25,6 +27,8 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY, sa
 
 app.include_router(jwt_auth)
 app.include_router(session_auth)
+app.include_router(post_router)
+app.include_router(comment_router)
 
 @app.get("/health")
 def health_test():
