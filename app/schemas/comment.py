@@ -13,3 +13,10 @@ class CommentResponse(BaseModel):
     created_at : datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class PaginatedCommentsResponse(BaseModel):
+    page : int
+    limit : int
+    total_comments : int
+    total_pages : int
+    results : list[CommentResponse]

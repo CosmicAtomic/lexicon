@@ -18,3 +18,12 @@ class PostResponse(BaseModel):
     created_at : datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class PaginatedPostsResponse(BaseModel):
+    page: int
+    limit: int
+    total_posts: int
+    total_pages : int
+    next_cursor_timestamp : datetime | None
+    next_cursor_id : uuid.UUID | None
+    posts: list[PostResponse]
