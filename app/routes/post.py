@@ -5,7 +5,7 @@ from app.schemas.post import PaginatedPostsResponse, PostCreate, PostResponse, P
 from app.services import get_post_by_id
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, or_, and_
+from sqlalchemy import or_, and_, asc, desc
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -29,8 +29,19 @@ def get_all_posts(
     cursor_id: UUID | None = None, 
     limit: int | None = 10, 
     page: int | None = 1, 
+    date_from : datetime | None = None,
+    date_to : datetime | None = None,
+    author_id : UUID | None = None,
+    sort_by : str | None = None,
+    order : str | None = "desc",
     db: Session = Depends(get_db)
 ):
+    if sort_by and sort_by not in ("created_at", "title"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail = f"sort_by must be one of {["created_at", "title"]}")
+
+    if order not in ("asc", "desc"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="order must be either 'asc' or 'desc'")
+    
     limit, page = max(limit, 1), max(page, 1)
     limit = min(limit, 100)
     if (cursor_timestamp is None) != (cursor_id is None):
@@ -38,30 +49,53 @@ def get_all_posts(
             status_code= status.HTTP_400_BAD_REQUEST,
             detail= "cursor_timestamp and cursor_id must be provided together."
         )
+    
+    query = db.query(Post)
+
+    # Apply filters
+    if author_id:
+        query = query.filter(Post.author_id == author_id)
+    if date_from:
+        query = query.filter(Post.created_at >= date_from)
+    if date_to:
+        query = query.filter(Post.created_at <= date_to)
+
+    #----Get filtered Post counts---
+    total_posts = query.count()
+    total_pages = math.ceil(total_posts/limit) if total_posts >0 else 1
+
+    #----- Apply sorting-----
+    if sort_by:
+        sort_fn = asc if order == "asc" else desc
+        column_attr = getattr(Post, sort_by)
+        query = query.order_by(sort_fn(column_attr), sort_fn(Post.id))
+    else:
+        query = query.order_by(Post.created_at.desc())
+
+    #------Apply Pagination-------
+    
     next_cursor_id = None
     next_cursor_timestamp = None
-    if cursor_timestamp is not None:
+
+    if cursor_timestamp and (not sort_by or sort_by == "created_at") and order == "desc":
         posts = (
-            db.query(Post)
-            .filter(
+            query.filter(
                 or_(
                     Post.created_at < cursor_timestamp,
                     and_(Post.created_at == cursor_timestamp, Post.id < cursor_id)
                 )
             )
-            .order_by(Post.created_at.desc(), Post.id.desc())
             .limit(limit)
             .all()
         )
     else:
         offset = (page- 1) * limit
-        posts = db.query(Post).order_by(Post.created_at.desc()).offset(offset).limit(limit).all()
+        posts = query.offset(offset).limit(limit).all()
     if posts:
         last_post = posts[-1]
         next_cursor_id = last_post.id
         next_cursor_timestamp = last_post.created_at
-    total_posts = db.query(func.count(Post.id)).scalar()
-    total_pages = math.ceil(total_posts/limit) if total_posts>0 else 1
+    
     return {
         "page" : page,
         "limit": limit,
