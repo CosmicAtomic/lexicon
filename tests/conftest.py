@@ -22,12 +22,12 @@ async def client():
 @pytest.fixture
 async def registered_user(client):
     payload = {"email": "dope@example.com","username": "test_user", "password": "supersecret123"}
-    await client.post('auth/signup', json=payload)
+    await client.post('v1/auth/signup', json=payload)
     return payload
 
 @pytest.fixture
 async def logged_in_session(client, registered_user):
-    response = await client.post('auth/session/login', json= registered_user)
+    response = await client.post('v1/auth/session/login', json= registered_user)
     session_id = response.cookies.get("session_id")
     return session_id
 

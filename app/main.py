@@ -25,10 +25,10 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY, same_site="lax", https_only=False)
 
-app.include_router(jwt_auth)
-app.include_router(session_auth)
-app.include_router(post_router)
-app.include_router(comment_router)
+app.include_router(jwt_auth, prefix="/v1")
+app.include_router(session_auth, prefix= "/v1")
+app.include_router(post_router, prefix="/v1")
+app.include_router(comment_router, prefix="/v1")
 
 @app.get("/health")
 def health_test():
