@@ -1,17 +1,19 @@
 import secrets
+import time
 import uuid
 from app.config import settings
 from app.database import SessionLocal
 from app.security import decode_access_token
 from app.services import get_user_by_email, get_user_by_id
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 
 bearer_scheme = HTTPBearer()
 sessions: dict[str, dict] = {}  # In-memory session storage
+IDEMPOTENCTY_STORE: dict[str, dict] = {}
 
 def get_db():
     db = SessionLocal()
@@ -55,3 +57,15 @@ def verify_csrf_token(request: Request):
     if not secrets.compare_digest(cookie_token, header_token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token mismatch")
     return True
+
+def check_idempotency(idempotency_key: str | None = Header(None, alias="Idempotency-Key"), current_user=Depends(get_current_user)):
+    if not idempotency_key:
+        return {"store_key": None, "cached_response": None}
+    store_key = f"{current_user.id}:{idempotency_key}"
+    record = IDEMPOTENCTY_STORE.get(store_key)
+    if record:
+        if time.time() < record["expires_at"]:
+            return {"store_key": store_key, "cached_response": record["response"]}
+        else:
+            del IDEMPOTENCTY_STORE[store_key]
+    return {"store_key": store_key, "cached_response":None}

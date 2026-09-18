@@ -1,5 +1,6 @@
 import math
-from app.dependencies import get_current_user, get_db
+import time
+from app.dependencies import check_idempotency, get_current_user, get_db, IDEMPOTENCTY_STORE
 from app.models.post import Post
 from app.schemas.post import PaginatedPostsResponse, PostCreate, PostResponse, PostUpdate
 from app.services import get_post_by_id
@@ -12,7 +13,15 @@ from uuid import UUID
 post_router = APIRouter()
 
 @post_router.post('/posts', response_model = PostResponse, status_code=status.HTTP_201_CREATED)
-def create_post(payload: PostCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def create_post(
+    payload: PostCreate, 
+    db: Session = Depends(get_db), 
+    current_user = Depends(get_current_user),
+    idem_key : str | None = Depends(check_idempotency)
+):
+    if idem_key["cached_response"] is not None:
+        return idem_key["cached_response"]
+    
     new_post = Post(
         title = payload.title,
         body = payload.body,
@@ -20,7 +29,16 @@ def create_post(payload: PostCreate, db: Session = Depends(get_db), current_user
     )
     db.add(new_post)
     db.commit()
-    db.refresh(new_post)
+    db.refresh(new_post) 
+
+    response_data = PostResponse.model_validate(new_post).model_dump(mode="json")
+
+    if idem_key["store_key"] is not None:
+        ttl = 86400 #24 hours
+        IDEMPOTENCTY_STORE[idem_key["store_key"]] = {
+            "expires_at": time.time() + ttl,
+            "response": response_data
+        }
     return new_post
 
 @post_router.get('/posts', response_model=PaginatedPostsResponse)
