@@ -26,6 +26,18 @@ async def registered_user(client):
     return payload
 
 @pytest.fixture
+async def auth_headers(client, registered_user):
+    response = await client.post('v1/auth/jwt/login', json=registered_user)
+    return {"Authorization": f"Bearer {response.json()["access_token"]}"}
+
+@pytest.fixture
+async def other_auth_headers(client):
+    payload = {"email": "otheruser@example.com","username": "other_user", "password": "supersecret123"}
+    await client.post('v1/auth/signup', json=payload)
+    response = await client.post('v1/auth/jwt/login', json=payload)
+    return {"Authorization": f"Bearer {response.json()["access_token"]}"}
+
+@pytest.fixture
 async def logged_in_session(client, registered_user):
     response = await client.post('v1/auth/session/login', json= registered_user)
     session_id = response.cookies.get("session_id")

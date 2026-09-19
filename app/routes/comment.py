@@ -8,6 +8,7 @@ from app.services import get_post_by_id
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 comment_router = APIRouter()
 
@@ -22,7 +23,8 @@ async def notify_comment_created(data):
 
 @comment_router.post('/posts/{post_id}/comments', response_model = CommentResponse, status_code=status.HTTP_201_CREATED)
 def create_comment(
-    post_id, payload: CommentCreate, 
+    post_id: UUID, 
+    payload: CommentCreate, 
     background_tasks: BackgroundTasks,
     db: Session =Depends(get_db), 
     current_user=Depends(get_current_user)
@@ -42,7 +44,7 @@ def create_comment(
     return new_comment
 
 @comment_router.get('/posts/{post_id}/comments')
-def get_all_comments(post_id, page: int = 1, limit: int = 20, db: Session = Depends(get_db)):
+def get_all_comments(post_id: UUID, page: int = 1, limit: int = 20, db: Session = Depends(get_db)):
     post = get_post_by_id(db, post_id=post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
@@ -51,9 +53,10 @@ def get_all_comments(post_id, page: int = 1, limit: int = 20, db: Session = Depe
     limit = min(limit, 120)
     offset = (page-1) * limit
 
-    comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.desc()).offset(offset).limit(limit).all()
-    total_comments = db.query(func.count(Comment.id)).filter(Comment.id == post_id).scalar()
-    total_pages = math.ceil(total_comments/ limit) if total_comments > 0 else 1
+    total_comments = db.query(func.count(Comment.id)).filter(Comment.post_id == post_id).scalar()
+    total_pages = math.ceil(total_comments / limit) if total_comments > 0 else 1
+
+    comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.desc()).offset(offset).limit(limit).all()   
 
     return {
         "page": page,

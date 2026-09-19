@@ -125,14 +125,14 @@ def get_all_posts(
     }
 
 @post_router.get('/posts/{post_id}', response_model= PostResponse, status_code= status.HTTP_200_OK)
-def get_post(post_id, db: Session = Depends(get_db)):
+def get_post(post_id: UUID, db: Session = Depends(get_db)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
     return post
 
 @post_router.put('/posts/{post_id}', response_model= PostResponse)
-def update_post(payload: PostUpdate, post_id, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def update_post(payload: PostUpdate, post_id: UUID, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
@@ -147,7 +147,7 @@ def update_post(payload: PostUpdate, post_id, db: Session = Depends(get_db), cur
     return post
 
 @post_router.delete('/posts/{post_id}', status_code=status.HTTP_200_OK)
-def delete_post(post_id, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def delete_post(post_id: UUID, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
