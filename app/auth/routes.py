@@ -1,13 +1,21 @@
 from app.dependencies import get_current_user, get_db
 from app.limiter import limiter
 from app.models.user import User
+from app.schemas.responses import COMMON_RESPONSES
 from app.security import create_access_token, hash_password, verify_password 
 from app.services import get_user_by_email, get_user_by_username
 from app.schemas.user import Token, UserCreate, UserResponse
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-jwt_auth = APIRouter(prefix='/auth')
+jwt_auth = APIRouter(
+    prefix='/auth',
+    responses={
+        400: COMMON_RESPONSES[400],
+        401: COMMON_RESPONSES[401],
+        429: COMMON_RESPONSES[429]
+    }
+)
 
 @jwt_auth.post('/jwt/login')
 @limiter.limit('5/minute')
