@@ -3,6 +3,7 @@ import math
 from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models.comment import Comment
+from app.schemas.responses import COMMON_RESPONSES
 from app.schemas.comment import CommentCreate, CommentResponse
 from app.services import get_post_by_id
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -10,7 +11,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-comment_router = APIRouter()
+comment_router = APIRouter(
+    responses={
+        401: COMMON_RESPONSES[401],
+        404: COMMON_RESPONSES[404],
+        400: COMMON_RESPONSES[400],
+    }
+)
 
 async def notify_comment_created(data):
     try:
