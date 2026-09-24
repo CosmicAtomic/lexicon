@@ -64,6 +64,8 @@ def get_all_posts(
     order : Literal["asc", "desc"] | None = "desc",  
     db: Session = Depends(get_db)
 ):
+    if page > 1000000:
+        page = 1000000
     
     limit, page = max(limit, 1), max(page, 1)
     limit = min(limit, 100)

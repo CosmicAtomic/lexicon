@@ -55,6 +55,9 @@ def get_all_comments(post_id: UUID, page: int = 1, limit: int = 20, db: Session 
     post = get_post_by_id(db, post_id=post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
+
+    if page > 1000000:
+        page = 1000000
     
     limit, page = max(limit, 1), max(page, 1)
     limit = min(limit, 120)
