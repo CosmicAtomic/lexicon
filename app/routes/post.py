@@ -2,17 +2,27 @@ import math
 import time
 from app.dependencies import check_idempotency, get_current_user, get_db, IDEMPOTENCTY_STORE
 from app.models.post import Post
+from app.schemas.responses import COMMON_RESPONSES
 from app.schemas.post import PaginatedPostsResponse, PostCreate, PostResponse, PostUpdate
 from app.services import get_post_by_id
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, and_, asc, desc
 from sqlalchemy.orm import Session
+from typing import Literal
 from uuid import UUID
 
-post_router = APIRouter()
+post_router = APIRouter(
+    prefix= "/posts",
+    responses={
+        401: COMMON_RESPONSES[401],
+        404: COMMON_RESPONSES[404],
+        400: COMMON_RESPONSES[400],
+        403: COMMON_RESPONSES[403]
+    }
+)
 
-@post_router.post('/posts', response_model = PostResponse, status_code=status.HTTP_201_CREATED)
+@post_router.post('', response_model = PostResponse, status_code=status.HTTP_201_CREATED)
 def create_post(
     payload: PostCreate, 
     db: Session = Depends(get_db), 
@@ -41,7 +51,7 @@ def create_post(
         }
     return new_post
 
-@post_router.get('/posts', response_model=PaginatedPostsResponse)
+@post_router.get('', response_model=PaginatedPostsResponse, responses={400: {"description": "Cursor pagination attributes missing together"}})
 def get_all_posts(
     cursor_timestamp: datetime | None = None, 
     cursor_id: UUID | None = None, 
@@ -50,15 +60,12 @@ def get_all_posts(
     date_from : datetime | None = None,
     date_to : datetime | None = None,
     author_id : UUID | None = None,
-    sort_by : str | None = None,
-    order : str | None = "desc",
+    sort_by : Literal["created_at", "title"] | None = None,
+    order : Literal["asc", "desc"] | None = "desc",  
     db: Session = Depends(get_db)
 ):
-    if sort_by and sort_by not in ("created_at", "title"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail = f"sort_by must be one of {["created_at", "title"]}")
-
-    if order not in ("asc", "desc"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="order must be either 'asc' or 'desc'")
+    if page > 1000000:
+        page = 1000000
     
     limit, page = max(limit, 1), max(page, 1)
     limit = min(limit, 100)
@@ -124,14 +131,14 @@ def get_all_posts(
         "posts": posts
     }
 
-@post_router.get('/posts/{post_id}', response_model= PostResponse, status_code= status.HTTP_200_OK)
+@post_router.get('/{post_id}', response_model= PostResponse, status_code= status.HTTP_200_OK)
 def get_post(post_id: UUID, db: Session = Depends(get_db)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Post not found")
     return post
 
-@post_router.put('/posts/{post_id}', response_model= PostResponse)
+@post_router.put('/{post_id}', response_model= PostResponse)
 def update_post(payload: PostUpdate, post_id: UUID, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
@@ -146,7 +153,7 @@ def update_post(payload: PostUpdate, post_id: UUID, db: Session = Depends(get_db
     db.refresh(post)
     return post
 
-@post_router.delete('/posts/{post_id}', status_code=status.HTTP_200_OK)
+@post_router.delete('/{post_id}', status_code=status.HTTP_200_OK)
 def delete_post(post_id: UUID, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     post = get_post_by_id(db, post_id= post_id)
     if not post:
