@@ -16,7 +16,8 @@ comment_router = APIRouter(
         401: COMMON_RESPONSES[401],
         404: COMMON_RESPONSES[404],
         400: COMMON_RESPONSES[400],
-    }
+    },
+    tags= ["Comments"]
 )
 
 async def notify_comment_created(data):

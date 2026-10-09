@@ -19,7 +19,8 @@ post_router = APIRouter(
         404: COMMON_RESPONSES[404],
         400: COMMON_RESPONSES[400],
         403: COMMON_RESPONSES[403]
-    }
+    },
+    tags= ["Posts"]
 )
 
 @post_router.post('', response_model = PostResponse, status_code=status.HTTP_201_CREATED)
